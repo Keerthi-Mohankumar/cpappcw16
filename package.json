@@ -1,0 +1,91 @@
+{
+  "name": "cpapp",
+  "version": "1.0.0",
+  "description": "A simple CAP project.",
+  "repository": "<Add your repository here>",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^3.10.0",
+    "@sap-cloud-sdk/util": "^3.10.0",
+    "@sap/cds": "^6",
+    "@sap/xb-msg-amqp-v100": "^0.9.58",
+    "@sap/xssec": "^3",
+    "express": "^4",
+    "hdb": "^0.19.0",
+    "passport": "^0"
+  },
+  "devDependencies": {
+    "@sap/ux-specification": "^1.120.1",
+    "rimraf": "^3.0.2",
+    "sqlite3": "^5"
+  },
+  "engines": {
+    "node": "^20"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch-risks": "cds watch --open risks/webapp/index.html?sap-ui-xx-viewCache=false",
+    "watch-mitigations": "cds watch --open mitigations/webapp/index.html?sap-ui-xx-viewCache=false",
+    "undeploy": "cf undeploy cpapp --delete-services --delete-service-keys --delete-service-brokers",
+    "build": "rimraf resources mta_archives && mbt build --mtar archive",
+    "deploy": "cf deploy mta_archives/archive.mtar --retries 1"
+  },
+  "sapux": [
+    "app/risks"
+  ],
+  "cds": {
+    "requires": {
+      "[development]": {
+        "auth": {
+          "kind": "mocked",
+          "users": {
+            "risk.viewer@tester.sap.com": {
+              "password": "initial",
+              "ID": "risk.viewer@tester.sap.com",
+              "roles": [
+                "RiskViewer"
+              ]
+            },
+            "risk.manager@tester.sap.com": {
+              "password": "initial",
+              "ID": "risk.manager@tester.sap.com",
+              "roles": [
+                "RiskManager"
+              ]
+            }
+          }
+        }
+      },
+      "[production]": {
+        "db": "hana-cloud",
+        "auth": "xsuaa"
+      },
+      "db": "sql",
+      "API_BUSINESS_PARTNER": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_BUSINESS_PARTNER-extended",
+        "[sandbox]": {
+          "credentials": {
+            "url": "https://sandbox.api.sap.com/s4hanacloud/sap/opu/odata/sap/API_BUSINESS_PARTNER/"
+          }
+        },
+        "[production]": {
+          "credentials": {
+            "path": "/sap/opu/odata/sap/API_BUSINESS_PARTNER",
+            "destination": "cpapp-bupa"
+          }
+        }
+      },
+      "messaging": {
+        "kind": "local-messaging",
+        "[production]": {
+          "kind": "enterprise-messaging-shared",
+          "format": "cloudevents",
+          "publishPrefix": "$namespace/ce/",
+          "subscribePrefix": "+/+/+/ce/"
+        }
+      }
+    }
+  }
+}
